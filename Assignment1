@@ -1,0 +1,889 @@
+Data Mining and Knowledge Engineering
+Assignment 1
+Part B
+Brief:
+Mine real world dataset regarding Parkinson’s disease for best classification.
+Parkinson's = loss of control over muscles and decrease speech quality.
+Cure = Speech therapy
+Types of classification = class 1 (Improved)/class 2 (unimproved)
+Goal = maximize weighted F score for accuracy
+Total features: 310
+Initial problems = identify which subset of features provide best F score + imbalanced
+dataset class 1 has 42 patients and class 2 has 84.
+Note: Balancing methods must be applied to improve accuracy.
+F_weighted = (F1_1 * nc1 + F1_2 * nc2)/(nc1+nc2)
+F1_1 and nc1 is for class 1.
+F2_2 and nc2 is for class 2.
+Task 1:
+(A)
+LSVTtrain<-read.arff("C:/Users/Admin/Desktop/BCIS/Sem 2 2019/Data Mining/Assignment
+1/LSVT_train.arff")
+colnames(LSVTtrain)[311] <-"class" # set the target attribute name to "class" in the training
+file
+LSVTtest<-read.arff("C:/Users/Admin/Desktop/BCIS/Sem 2 2019/Data Mining/Assignment
+1/LSVT_test.arff")
+colnames(LSVTtest)[311] <- "class" # set the target attribute name to "class" in the testing
+file
+change_classifier<- make_Weka_classifier("weka/classifiers/trees/J48")
+actual<-LSVTtest[, 311] # get the class values from the test file
+A<- GainRatioAttributeEval(class ~ . , data = LSVTtrain,na.action=NULL ) # rank features by
+their information gain score
+ranked_list<- A[order(A)]
+nc1<-0
+nc2<-0
+for(i in seq(5,305,5))
+{
+ cat("Number of features selected:" ,i ,"\n")
+ D<-(305-i) # now specify the number of features to be dropped;
+ s<- ranked_list[1:D]
+ cols.dont.want <- c(names(s)) # identify names of low ranked features
+Shannon Imbo - 1303744
+ LSVTtrain1<- LSVTtrain[, !names(LSVTtrain) %in% cols.dont.want, drop = T] # now drop
+low ranked features from the training dataset
+
+ classifier <- J48(class ~ ., data = LSVTtrain1 , na.action=NULL) # build the model on the
+reduced training dataset (the version with the top i attributes)
+ LSVTtest1<- LSVTtest[, !names(LSVTtrain) %in% cols.dont.want, drop = T] # drop low
+ranked features drop low ranked features from the test dataset
+ pred<-predict(classifier,LSVTtest1, na.action=NULL,seed=1) # deploy the new version of
+the dataset on the test dataset to make predictions
+
+ P11<-0
+ P12<-0
+ P21<-0
+ P22<-0
+
+ for ( K in seq(1,42))
+ {
+ if(actual[K]==1)
+ {
+ if(pred[K]==1)
+ {
+ P11<-P11+1
+ }
+ else
+ {
+ P12<-P12+1
+ }
+ }
+ else if (actual[K]==2)
+ {
+ if(pred[K]==2)
+ {
+ P22<-P22+1
+ }
+ else
+ {
+ P21<-P21+1
+ }
+ }
+ }
+ Prec_1<-(P11/(P11+P21))
+ Prec_2<-(P22/(P22+P12))
+ Recall_1<-(P11/(P11+P12))
+ Recall_2<-(P22/(P22+P21))
+
+ nc1<- P11 + P12
+ nc2<-P21 + P22
+ 
+Shannon Imbo - 1303744
+ F_1<-(2*Prec_1*Recall_1)/(Prec_1+Recall_1)
+ F_2<-(2*Prec_2*Recall_2)/(Prec_2+Recall_2)
+ F_overall<-(F_1*nc1+F_2*nc2)/(nc1+nc2)
+ print(F_overall)
+}
+Shannon Imbo - 1303744
+Test results:
+Best overall F_score:
+Number of features selected: 5
+[1] 0.75
+Average was:
+0.75
+Minimum was:
+Number of features selected: 15
+[1] 0.7142857
+(B)
+Changing Classifier code for each algorithm:
+J48:
+change_classifier<- make_Weka_classifier("weka/classifiers/trees/J48")
+OneR:
+change_classifier<- make_Weka_classifier("weka/classifiers/rules/OneR")
+IBK:
+change_classifier<- make_Weka_classifier("weka/classifiers/lazy/IBk")
+Naive Bayes:
+change_classifier<- make_Weka_classifier("weka/classifiers/bayes/NaiveBayes")
+Shannon Imbo - 1303744
+TASK 2:
+(A)
+IBK :
+Number of features selected: 310
+[1] 0.7619048
+Naive Bayes:
+Number of features selected: 310
+[1] 0.745098
+J48:
+Number of features selected: 310
+[1] 0.85
+OneR:
+Number of features selected: 310
+[1] 0.65
+(B)
+Naive Bayes IBk J48 OneR
+0.745098 0.7619048 0.75 0.65
+Number of features
+selected: 40
+[1] 0.8592593
+Number of features
+selected: 105
+[1] 0.9261017
+Number of features
+selected: 5
+[1] 0.85
+Number of features
+selected: 5
+[1] 0.7138047
+Shannon Imbo - 1303744
+(C) Explanation:
+Naive Bayes:
+From my understanding, Naive Bayes algorithm works by Taking the frequency of each
+instance, calculating the probabilities, calculating the posterior probability, and taking the
+highest probability will be the outcome of the prediction. It uses all the available data from
+the LSVT dataset and predicts through probability. It is very versatile because it can work
+with missing values, it is not fussed about irrelevant features, and it is good for text
+classification as well. The issue with Naive Bayes is though the prediction from the model is
+it has chances of losing accuracy if a categorical variable is missed in the training set, then
+the model will assign zero which will negatively impact the overall f score. Knowing this,
+Naive Bayes still managed to perform 2nd best from all the other 4 algorithms but only by a
+very tiny margin compared to J48 trees.
+IBk:
+K-Nearest Neighbour (K-NN) works by looking for the nearest neighbour using the distance
+between them. This can be achieved through Euclidean, Manhattan, Minkowski, or the
+Hamming distance formulas. Using these 4 different formulas, KNN can work with multiclass problems, usable for Classification and Regression, and can adapt to new problems
+thrown at it. Though it performed the best out of all its neighbours (haha), it is not without
+flaws. The larger the dataset is the less efficient it becomes. It can suffer with imbalanced
+data as it tends to become bias towards the biggest class (specially in a binary). It is also
+very sensitive to outliers due to distance being used to classify and it deals very poorly with
+missing values. By supplying it 105 different features, it is able to comfortably identify the
+best ones and therefore increase the F score greatly, with a difference of 0.1641969 from
+the default value of 310 features. In this regard, more features do not necessarily mean a
+higher accuracy, as demonstrated by the table above.
+J48:
+The beauty with J48 is that it has great interpretability due to its natural way of displaying
+relationships or affinities between features. When given 5 different features, it has a very
+narrow set of instructions or path to follow and hence there would be less pruning involved
+compared to a feature with 300 as its value. It performed 3rd best out of the 4 but only
+coming in behind Naive Bayes by a very slight amount.
+Shannon Imbo - 1303744
+OneR:
+OneR or one-attribute-rule works by using very simple rules in terms of association.
+It simply makes one rule for each of the predictors in the data and picks the one with the
+least amount of total error as the rule. It then applies this to the rest of the predictors to yield
+the best possible f score. By allowing 5 features, the classifier was able to increase its
+accuracy by 5% which is not bad considering how simple this classifier works. It did
+however, work poorly compared to its more complicated competitors.
+(D)
+Best Algorithm after best features were selected:
+IBk
+Shannon Imbo - 1303744
+TASK 3:
+(A)
+LSVTtrain<-read.arff("C:/Users/Admin/Desktop/BCIS/Sem 2 2019/Data Mining/Assignment
+1/LSVT_train.arff")
+colnames(LSVTtrain)[311] <-"class" # set the target attribute name to "class" in the training
+file
+LSVTtest<-read.arff("C:/Users/Admin/Desktop/BCIS/Sem 2 2019/Data Mining/Assignment
+1/LSVT_test.arff")
+colnames(LSVTtest)[311] <- "class" # set the target attribute name to "class" in the testing
+file
+# change_classifier<- make_Weka_classifier("weka/classifiers/trees/J48")
+# change_classifier<- make_Weka_classifier("weka/classifiers/lazy/IBk")
+# change_classifier<- make_Weka_classifier("weka/classifiers/bayes/NaiveBayes")
+change_classifier<- make_Weka_classifier("weka/classifiers/rules/OneR")
+#Please uncomment desired classifer above
+actual<-LSVTtest[, 311] # get the class values from the test file
+A<- GainRatioAttributeEval(class ~ . , data = LSVTtrain,na.action=NULL ) # rank features by
+their information gain score
+ranked_list<- A[order(A)]
+nc1<-0
+nc2<-0
+for(i in seq(5,305,5))
+{
+ D<-(300) # specify the number of features (Currently set to 105 for OneR)
+ s<- ranked_list[1:D]
+ cols.dont.want <- c(names(s)) # identify names of low ranked features
+ LSVTtrain1<- LSVTtrain[, !names(LSVTtrain) %in% cols.dont.want, drop = T] # now drop
+low ranked features from the training dataset
+
+ classifier <- change_classifier(class ~ ., data = LSVTtrain1 , na.action=NULL) # build the
+model on the reduced training dataset (the version with the top i attributes)
+ LSVTtest1<- LSVTtest[, !names(LSVTtrain) %in% cols.dont.want, drop = T] # drop low
+ranked features drop low ranked features from the test dataset
+ pred<-predict(classifier,LSVTtest1, na.action=NULL,seed=1) # deploy the new version of
+the dataset on the test dataset to make predictions
+
+ P11<-0
+ P12<-0
+ P21<-0
+ P22<-0
+ for ( K in seq(1,42))
+ {
+ if(actual[K]==1)
+Shannon Imbo - 1303744
+ {
+ if(pred[K]==1)
+ {
+ P11<-P11+1
+ }
+ else
+ {
+ P12<-P12+1
+ }
+ }
+ else if (actual[K]==2)
+ {
+ if(pred[K]==2)
+ {
+ P22<-P22+1
+ }
+ else
+ {
+ P21<-P21+1
+ }
+ }
+ }
+ Prec_1<-(P11/(P11+P21))
+ Prec_2<-(P22/(P22+P12))
+ Recall_1<-(P11/(P11+P12))
+ Recall_2<-(P22/(P22+P21))
+ nc1<- P11 + P12
+ nc2<-P21 + P22
+ F1_1<-(2*Prec_1*Recall_1)/(Prec_1+Recall_1)
+ F1_2<-(2*Prec_2*Recall_2)/(Prec_2+Recall_2)
+ F_overall<-(F1_1*nc1+F1_2*nc2)/(nc1+nc2)
+}
+for (ii in seq(0.3,1.0,0.1)){
+ for (i in seq(100,1000,100))
+ {
+ resample <- make_Weka_filter("weka.filters.supervised.instance.Resample") # register
+the Resample filter
+ rebalancedDataSet<- resample(class ~., data = LSVTtrain1, control =
+Weka_control(Z=i,B=ii), na.action=NULL )
+ classifier <- change_classifier(class ~ ., data = rebalancedDataSet, na.action=NULL) #
+register the chosen classifier
+ pred<-predict(classifier,LSVTtest1, na.action=NULL) # this evaluates the accuracy of
+classifer's predictions on the test dataset
+Shannon Imbo - 1303744
+ P11<-0 # this will capture row 1 and column 1 of the confusion matrix
+ P12<-0 # this will capture row 1 and column 2 of the confusion matrix
+ P21<-0 #this will capture row 2 and column 1 of the confusion matrix
+ P22<-0 #this will capture row 2 and column 2 of the confusion matrix
+ for ( K in seq(1,42))
+ { # loop for all 42 instances in the test file
+ if(actual[K]==1){
+ if(pred[K]==1){
+ # fill in the appropriate action here
+ P11=P11+1
+ }
+ else
+ {
+ # fill in the appropriate action here
+ P12 = P12 +1
+ }
+ }
+ else if (actual[K]==2){
+ if(pred[K]==2){
+ # fill in the appropriate action here
+ P22=P22+1
+ }
+ else
+ {
+ # fill in the appropriate action here
+ P21=P21+1
+ }
+ }
+ }
+ Prec_1<-(P11/(P11+P21)) # calculate precision on class 1
+ Prec_2<-(P22/(P22+P12)) # calculate precision on class 2
+ Recall_1<-(P11/(P11+P12)) # calculate recall on class 1
+ Recall_2<-(P22/(P22+P21)) # calculate recall on class 2
+ F1_1<-(2*Prec_1*Recall_1)/(Prec_1+Recall_1)
+ F1_2<-(2*Prec_2*Recall_2)/(Prec_2+Recall_2)
+ nc1<-P11+P12
+ nc2<-P21+P22
+ F_overall<-(F1_1*nc1+F1_2*nc2)/(nc1+nc2) # calculate overall F value
+ cat(i,F_overall,"\n")
+ if(i == 1000)
+ {
+ cat("End of:",ii,"\n") #Marks the start of a new B value
+ }
+Shannon Imbo - 1303744
+ if(i == 100)
+ {
+ F_max<-F_overall
+ }
+ if(F_overall > F_max){
+ F_max <-F_overall
+ cat("MAX F_score: ",F_max,"\n") #Retrieves the best F_score
+ }
+ }
+}
+Shannon Imbo - 1303744
+(B)
+J48
+Z,B 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0
+100 0.8 0.8 0.87683
+62
+0.8768
+362
+0.87683
+62
+0.87683
+62
+0.87683
+62
+0.71428
+57
+200 0.75 0.69299
+9
+0.69299
+9
+0.6929
+99
+0.69299
+9
+0.69299
+9
+0.66666
+67
+0.71851
+85
+300 0.82204
+8
+0.82204
+8
+0.82204
+8
+0.7082
+228
+0.70822
+28 0.75685
+23
+0.82204
+8
+0.82204
+8
+400 0.70822
+28
+0.70822
+28
+0.70822
+28
+0.7082
+228
+0.70822
+28
+0.70822
+28
+0.70822
+28
+0.73554
+26
+500 0.73554
+26
+0.76190
+48
+0.76190
+48
+0.7619
+048
+0.9 0.85411
+14
+0.85411
+14
+0.9
+600 0.73554
+26
+0.73554
+26
+0.73554
+26
+0.7568
+523
+0.75685
+23
+0.75685
+23
+0.75685
+23
+0.75685
+23
+700 0.78362
+57
+0.75685
+23
+0.80548
+19
+0.7836
+257
+0.74022
+99
+0.83170
+89
+0.92610
+17
+0.80548
+19
+800 0.71428
+57
+0.74022
+99
+0.71851
+85
+0.7402
+299
+0.71428
+57
+0.71428
+57
+0.75685
+23
+0.9
+900 0.74022
+99
+0.71428
+57
+0.69299
+9
+0.6929
+99
+0.69299
+9
+0.72903
+95
+0.80548
+19
+0.80548
+19
+1000 0.62820
+51
+0.71428
+57
+0.71428
+57
+0.7142
+857
+0.68745
+94
+0.68745
+94
+0.72903
+95
+0.82204
+8
+Shannon Imbo - 1303744
+Naive Bayes
+Z,B 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0
+100 0.88334
+35
+0.88334
+35
+0.88334
+35
+0.88334
+35
+0.88334
+35
+0.88334
+35
+0.88334
+35
+0.88334
+35
+200 0.86057
+69
+0.86057
+69
+0.86057
+69
+0.83778
+97
+0.83778
+97
+0.88334
+35
+0.86057
+69
+.860576
+9
+300 0.86057
+69
+0.86057
+69
+0.86057
+69
+0.83778
+97
+0.86057
+69
+0.81490
+2
+0.86057
+69
+0.88334
+35
+400 0.83778
+97
+0.81490
+2
+0.86057
+69
+0.86057
+69
+0.86057
+69
+0.86057
+69
+0.86057
+69
+0.81490
+2
+500 0.88334
+35
+0.88334
+35
+0.88334
+35
+0.85925
+93
+0.88334
+35
+0.88334
+35
+0.88334
+35
+0.88334
+35
+600 0.88334
+35
+0.86057
+69
+0.86057
+69
+0.86057
+69
+0.88334
+35
+0.85925
+93
+0.85925
+93
+0.85925
+93
+700 0.86057
+69
+0.86057
+69
+0.88334
+35
+0.88334
+35
+0.86057
+69
+0.83778
+97
+0.83778
+97
+0.83778
+97
+800 0.88334
+35
+0.86057
+69
+0.83778
+97
+0.83778
+97
+0.83778
+97
+0.83778
+97
+0.86057
+69
+0.83778
+97
+900 0.86057
+69
+0.83778
+97
+0.83778
+97
+0.83778
+97
+0.83778
+97
+0.83778
+97
+0.83778
+97
+0.83778
+97
+1000 0.88334
+35
+0.88334
+35
+0.83778
+97
+0.83778
+97
+0.83778
+97
+0.83778
+97
+0.83778
+97
+0.83778
+97
+Shannon Imbo - 1303744
+IBk
+Z,B 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0
+100 0.78362
+57
+0.78362
+57
+0.78362
+57
+0.78362
+57
+0.78362
+57
+0.76190
+48
+0.76190
+48
+0.76190
+48
+200 0.85 0.85 0.85 0.85 0.85 0.85 0.85 0.90274
+09
+300 0.90274
+09
+0.90274
+09
+0.90274
+09
+0.90274
+09
+0.90274
+09
+0.90274
+09
+0.90274
+09
+0.83170
+89
+400 0.9 0.9 0.9 0.9 0.9 0.9 0.9 0.9
+500 0.9 0.9 0.9 0.9 0.9 0.9 0.87683
+62
+0.9
+600 0.9 0.9 0.9 0.9 0.87683
+62
+0.87683
+62
+0.87683
+62
+0.87683
+62
+700 0.9 0.9 0.9 0.9 0.9 0.9 0.9 0.9
+800 0.9 0.9 0.9 0.9 0.9 0.9 0.9 0.9
+900 0.9 0.9 0.9 0.9 0.9 0.9 0.9 0.9
+1000 0.9 0.9 0.9 0.9 0.9 0.9 0.9 0.9
+Shannon Imbo - 1303744
+OneR
+Z,B 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0
+100 0.74335
+57
+0.74335
+57
+0.74335
+57
+0.74335
+57
+0.74335
+57
+0.74335
+57
+0.74335
+57
+0.69875
+22
+200 0.74022
+99
+0.74022
+99
+0.74022
+99
+0.74022
+99
+0.74022
+99
+0.77830
+51
+0.77830
+51
+0.53703
+7
+300 0.51428
+57
+0.51428
+57
+0.71428
+57
+0.58173
+08
+0.71428
+57
+0.58173
+08
+0.58173
+08
+0.58173
+08
+400 0.60336
+78
+0.60336
+78
+0.62469
+14
+0.60336
+78
+0.55 0.55 0.55 0.60336
+78
+500 0.70822
+28
+0.55 0.57777
+78
+0.68745
+94
+0.53197
+74
+0.68745
+94
+0.68745
+94
+0.68745
+94
+600 0.80548
+19
+0.80548
+19
+0.80548
+19
+0.80548
+19
+0.80548
+19
+0.80548
+19
+0.80548
+19
+0.80548
+19
+700 0.80548
+19
+0.80548
+19
+0.80548
+19
+0.80548
+19
+0.80548
+19
+0.80548
+19
+0.80548
+19
+0.80548
+19
+800 0.80548
+19
+0.80548
+19
+0.80548
+19
+0.80548
+19
+0.80548
+19
+0.80548
+19
+0.80548
+19
+0.80548
+19
+900 0.80548
+19
+0.80548
+19
+0.80548
+19
+0.80548
+19
+0.80548
+19
+0.80548
+19
+0.80548
+19
+0.80548
+19
+1000 0.80548
+19
+0.7 0.7 0.7 00.7 0.7 0.67977
+4
+0.67977
+4 
+Shannon Imbo - 1303744
+(C)
+Resampling applied with Z = 700 and B = 0.9 using J48(as per table above):
+Shannon Imbo - 1303744
+No balancing (resampling) applied:
+(D) Explanation:
+Both models eventually reach a recall of 1. The difference is the model with balanced and
+feature selection has a steadier rate of decrease in precision. The balanced model
+understands that not all results are relevant and reaches the recall but precision slowly
+decreases. This is a good thing because it is aware that it is making mistakes and it slowly
+correcting it while the unbalanced model is completely oblivious to which results or features
+are actually relevant and tries to make up for the incorrect predictions at a later rate. A
+balanced model with the correct set of features will be able to correct its recalls more
+efficiently but also at the expense of precision but at least it is trustworthy compared to a
+model using an imbalanced dataset with full features.
+Shannon Imbo - 1303744
+TASK4:
+Top three algorithms:
+1. Naive Bayes
+2. J48
+3. IBk
+Multilayer Perceptron
+Random Forest
+Shannon Imbo - 1303744
+(A) Explanation:
+(a) Assess the impact of meta-learning by comparing the F-weighted value obtained
+through meta learning with the value obtained by running each of the 4 algorithms on
+the original training dataset. Has it improved accuracy in terms of the F score? (8
+marks)
+The F score has decreased by a significant amount using both Random Forest and
+Multilayer Processing. Using MLP means the layers need to be defined properly otherwise it
+won’t be able to use its full potential and the accuracy suffers greatly (as displayed above).
+MLP heavily relies on being fine tuned. The amount of layers, the amount of neurons inside
+a layer, and setting the weight of each node must be precise otherwise the neural network
+will not be as accurate (as displayed here using default values in Weka). Random forest
+performed better but still not as good as using a single algorithm.
+(B) Explanation:
+(b) How important was the choice of meta-learner algorithm in the mining process?
+It makes a huge difference which meta-learner algorithm is used. As stated above, MLP is
+not very effective if the settings are not finely tuned for the dataset. It is also difficult to use
+trial and error with MLP as there are many different options to be tweaked and it is also
+considered a black-box and hence it can be difficult to determine the best values for tuning.
+Random forest is a lot more versatile and can actually provide a reliable feature importance
+estimate. The only drawback for Random Forests is that interpretability can also be a bit
+difficult to comprehend and the larger the trees become, the higher the computational costs
+(but is not such a big problem with today’s modern technology).
